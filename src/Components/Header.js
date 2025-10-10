@@ -8,7 +8,7 @@ function Header() {
     setOpenMenu(openMenu === menu ? null : menu);
   };
 
-  // ✅ Detect outside click
+  
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (headerRef.current && !headerRef.current.contains(event.target)) {
@@ -24,12 +24,12 @@ function Header() {
 
   return (
     <div ref={headerRef} className="font-sans text-[13px] relative">
-      {/* Top Title Bar */}
+      
       <div className="p-1 bg-gray-200 font-medium border-b border-gray-300">
         FASTtag - FASTtag
       </div>
 
-      {/* Menu Bar */}
+     
       <div className="bg-blue-200 flex gap-6 text-sm px-4 py-1 border-b border-gray-400 select-none">
         {["File", "Edit", "View", "Reports", "Tools", "Help"].map((item) => (
           <p
@@ -44,7 +44,7 @@ function Header() {
         ))}
       </div>
 
-      {/* Dropdowns */}
+      
       {openMenu === "File" && (
         <div className="absolute bg-gray-100 border border-gray-400 shadow-md w-48 text-[13px] text-gray-700 ">
           <p className="hover:bg-blue-100 cursor-pointer p-1 px-3">New</p>

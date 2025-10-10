@@ -1,12 +1,14 @@
 import React from 'react'
 import Header from './Components/Header'
-import SelectCmpany from './Components/Home/SelectCmpany'
+import SelectCompany from './Components/Home/SelectCompany'
+
 
 function App() {
   return (
     <>
     <Header/>
-    <SelectCmpany/>
+    <SelectCompany/>
+  
     
     </>
   )
