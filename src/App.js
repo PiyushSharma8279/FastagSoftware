@@ -1,17 +1,13 @@
-import React from 'react'
-import Header from './Components/Header'
-import SelectCompany from './Components/Home/SelectCompany'
+import React from "react";
+import MainDashboard from "./Components/Home/MainDashboard";
 
 
 function App() {
   return (
-    <>
-    <Header/>
-    <SelectCompany/>
-  
-    
+    <>     
+      <MainDashboard />   
     </>
-  )
+  );
 }
 
-export default App
+export default App;

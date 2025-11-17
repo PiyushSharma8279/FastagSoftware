@@ -1,102 +1,117 @@
 import React, { useState, useRef, useEffect } from "react";
 
-function Header() {
+export default function Header({
+  onAddCompany,
+  onEditCompany,
+  onDeleteCompany,
+  onAddItem,
+  onEditItem,
+  onDeleteItem,
+}) {
   const [openMenu, setOpenMenu] = useState(null);
   const headerRef = useRef(null);
 
-  const toggleMenu = (menu) => {
-    setOpenMenu(openMenu === menu ? null : menu);
-  };
+  const toggleMenu = (menu) => setOpenMenu(openMenu === menu ? null : menu);
 
-  
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (headerRef.current && !headerRef.current.contains(event.target)) {
         setOpenMenu(null);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
-    <div ref={headerRef} className="font-sans text-[13px] relative">
-      
-      <div className="p-1 bg-gray-200 font-medium border-b border-gray-300">
-        FASTtag - FASTtag
+    <div ref={headerRef} className="relative select-none">
+      <div className="p-3 flex items-center justify-between glass-card">
+        <div className="flex items-center gap-4">
+          <div className="text-lg font-bold">PowerQ</div>
+
+          <nav className="flex gap-4 text-sm">
+            {["File", "Edit", "View", "Reports", "Tools", "Help"].map((item) => (
+              <div
+                key={item}
+                className={`px-2 py-1 rounded-md cursor-pointer ${openMenu === item ? "bg-white/30" : "hover:bg-white/20"}`}
+                onClick={() => toggleMenu(item)}
+              >
+                {item}
+              </div>
+            ))}
+          </nav>
+        </div>
+
+        
       </div>
 
-     
-      <div className="bg-blue-200 flex gap-6 text-sm px-4 py-1 border-b border-gray-400 select-none">
-        {["File", "Edit", "View", "Reports", "Tools", "Help"].map((item) => (
-          <p
-            key={item}
-            onClick={() => toggleMenu(item)}
-            className={`cursor-pointer hover:bg-blue-300 px-1 rounded ${
-              openMenu === item ? "bg-blue-300" : ""
-            }`}
-          >
-            {item}
-          </p>
-        ))}
-      </div>
-
-      
+      {/* Menus */}
       {openMenu === "File" && (
-        <div className="absolute bg-gray-100 border border-gray-400 shadow-md w-48 text-[13px] text-gray-700 ">
-          <p className="hover:bg-blue-100 cursor-pointer p-1 px-3">New</p>
-          <p className="hover:bg-blue-100 cursor-pointer p-1 px-3">Open</p>
-          <p className="hover:bg-blue-100 cursor-pointer p-1 px-3">Save As...</p>
-          <hr className="border-gray-300" />
-          <p className="hover:bg-blue-100 cursor-pointer p-1 px-3">Import</p>
-          <hr className="border-gray-300" />
-          <p className="hover:bg-blue-100 cursor-pointer p-1 px-3">Backup</p>
-          <hr className="border-gray-300" />
-          <p className="hover:bg-blue-100 cursor-pointer p-1 px-3">Restore...</p>
-          <hr className="border-gray-300" />
-          <p className="hover:bg-blue-100 cursor-pointer p-1 px-3">Send Emails...</p>
-          <hr className="border-gray-300" />
-          <p className="hover:bg-blue-100 cursor-pointer p-1 px-3">Exit</p>
+        <div className="absolute left-4 mt-2 w-48 bg-white/90 backdrop-blur rounded shadow z-40 border">
+          <div className="p-2 hover:bg-blue-50 cursor-pointer">New</div>
+          <div className="p-2 hover:bg-blue-50 cursor-pointer">Open</div>
+          <div className="p-2 hover:bg-blue-50 cursor-pointer">Save As...</div>
+          <hr />
+          <div className="p-2 hover:bg-blue-50 cursor-pointer">Import</div>
         </div>
       )}
 
       {openMenu === "Edit" && (
-        <div className="absolute bg-gray-100 border border-gray-400 shadow-md w-48 ml-[42px] text-[13px] text-gray-700 ">
-          <p className="hover:bg-blue-100 cursor-pointer p-1 px-3">Add Company</p>
-          <p className="hover:bg-blue-100 cursor-pointer p-1 px-3">Edit Company</p>
-          <p className="hover:bg-blue-100 cursor-pointer p-1 px-3">Delete Company</p>
-          <hr className="border-gray-300" />
-          <div className="hover:bg-blue-100 cursor-pointer p-1 px-3 flex justify-between">
+        <div className="absolute left-24 mt-2 w-56 bg-white/90 backdrop-blur rounded shadow z-40 border">
+          <div
+            onClick={() => { setOpenMenu(null); onAddCompany?.(); }}
+            className="p-2 hover:bg-blue-50 cursor-pointer"
+          >
+            Add Company
+          </div>
+
+          <div
+            onClick={() => { setOpenMenu(null); onEditCompany?.(); }}
+            className="p-2 hover:bg-blue-50 cursor-pointer"
+          >
+            Edit Company
+          </div>
+
+          <div
+            onClick={() => { setOpenMenu(null); onDeleteCompany?.(); }}
+            className="p-2 hover:bg-blue-50 cursor-pointer"
+          >
+            Delete Company
+          </div>
+
+          <hr />
+
+          <div
+            onClick={() => { setOpenMenu(null); onAddItem?.(); }}
+            className="p-2 hover:bg-blue-50 cursor-pointer flex justify-between"
+          >
             <span>Add Item</span>
-            <span>Ctrl+A</span>
+            <span className="text-xs text-gray-400">Ctrl+A</span>
           </div>
-          <div className="hover:bg-blue-100 cursor-pointer p-1 px-3 flex justify-between">
+
+          <div
+            onClick={() => { setOpenMenu(null); onEditItem?.(); }}
+            className="p-2 hover:bg-blue-50 cursor-pointer flex justify-between"
+          >
             <span>Edit Item</span>
-            <span>Ctrl+E</span>
+            <span className="text-xs text-gray-400">Ctrl+E</span>
           </div>
-          <div className="hover:bg-blue-100 cursor-pointer p-1 px-3 flex justify-between">
+
+          <div
+            onClick={() => { setOpenMenu(null); onDeleteItem?.(); }}
+            className="p-2 hover:bg-blue-50 cursor-pointer flex justify-between"
+          >
             <span>Delete Item</span>
-            <span>Ctrl+D</span>
+            <span className="text-xs text-gray-400">Ctrl+D</span>
           </div>
-          <hr className="border-gray-300" />
-          <p className="hover:bg-blue-100 cursor-pointer p-1 px-3">Clear Clipboard</p>
-          <p className="hover:bg-blue-100 cursor-pointer p-1 px-3">Select All</p>
-          <p className="hover:bg-blue-100 cursor-pointer p-1 px-3">Recover</p>
-          <hr className="border-gray-300" />
-          <p className="hover:bg-blue-100 cursor-pointer p-1 px-3">Exit</p>
         </div>
       )}
 
       {openMenu === "View" && (
-        <div className="absolute bg-gray-100 border border-gray-400 shadow-md w-48 ml-[100px] text-[13px] text-gray-700 ">
-          <p className="hover:bg-blue-100 cursor-pointer p-1 px-3">All Categories</p>
+        <div className="absolute left-56 mt-2 w-48 bg-white/90 backdrop-blur rounded shadow z-40 border">
+          <div className="p-2 hover:bg-blue-50 cursor-pointer">All Categories</div>
         </div>
       )}
     </div>
   );
 }
-
-export default Header;
