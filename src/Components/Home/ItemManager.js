@@ -1,5 +1,5 @@
 // src/components/ItemManager/ItemManager.js
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { generateNextTagForDate, generateItemId } from "../../utils";
 
 export default function ItemManager({
@@ -8,6 +8,7 @@ export default function ItemManager({
   onAddItem,
   onEditItem,
   onDeleteItem,
+  onDuplicateItem,
   setSelectedItemTag,
   selectedItemTag,
   companies = [],
@@ -36,12 +37,17 @@ export default function ItemManager({
   const [form, setForm] = useState({ ...blankForm });
   const [editingTag, setEditingTag] = useState(null);
 
+  // local clipboard for copy/paste
+  const [copiedItem, setCopiedItem] = useState(null);
+  const copiedRef = useRef(null);
+
   // respond to external header open add
   useEffect(() => {
     if (externalOpenAdd) {
       openAddModal();
       setExternalOpenAdd?.(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalOpenAdd, setExternalOpenAdd]);
 
   useEffect(() => {
@@ -54,10 +60,10 @@ export default function ItemManager({
       }
       setExternalEditTag?.(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalEditTag, items, setExternalEditTag]);
 
   useEffect(() => {
-    // when selectedCompany changes, default company on new form
     setForm((f) => ({ ...f, company: selectedCompany || "" }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCompany]);
@@ -75,10 +81,8 @@ export default function ItemManager({
     setShowAddModal(true);
   };
 
-  // identifier generation: prefer numeric incremental if possible
   const generateIdentifier = () => {
     try {
-      // use existing identifiers (if numeric) to choose next
       const numeric = items
         .map((it) => {
           const val = Number(it.identifier);
@@ -120,16 +124,86 @@ export default function ItemManager({
   };
 
   const handleDelete = (e, tag) => {
+  e.stopPropagation();
+  onDeleteItem?.(tag); 
+};
+
+  const handleDuplicate = (e, item) => {
     e.stopPropagation();
-    if (window.confirm("Delete this item?")) onDeleteItem?.(tag);
+    onDuplicateItem?.(item);
   };
+
+  // keyboard handlers for copy/paste within this list
+  useEffect(() => {
+    const handler = (e) => {
+      const isCopy = (e.ctrlKey || e.metaKey) && (e.key === "c" || e.key === "C");
+      const isPaste = (e.ctrlKey || e.metaKey) && (e.key === "v" || e.key === "V");
+      const isUndo = (e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "Z");
+
+      // if Undo — allow parent/global handler to manage (do nothing here)
+      if (isUndo) return;
+
+      if (isCopy) {
+        // copy selected item into local clipboard
+        if (!selectedItemTag) {
+          // nothing selected; ignore
+          return;
+        }
+        const found = items.find((it) => String(it.tag) === String(selectedItemTag) || String(it.id) === String(selectedItemTag));
+        if (found) {
+          // clone
+          const clone = JSON.parse(JSON.stringify(found));
+          setCopiedItem(clone);
+          copiedRef.current = clone;
+          // optionally show small flash — kept simple with console log
+          // console.log("Copied item", clone);
+        }
+      }
+
+      if (isPaste) {
+        // paste only if we have a copied item
+        const clip = copiedRef.current || copiedItem;
+        if (!clip) return;
+        // set company on clip if missing: use selectedCompany prop
+        const toDuplicate = { ...clip, company: clip.company || selectedCompany };
+        onDuplicateItem?.(toDuplicate);
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [items, selectedItemTag, copiedItem, onDuplicateItem, selectedCompany]);
 
   return (
     <div className="flex-1 flex flex-col h-full">
       <div className="p-3 border-b flex items-center justify-between bg-white">
         <div className="flex items-center gap-2">
           <button onClick={openAddModal} className="px-3 py-1 bg-green-600 text-white rounded">Add Item</button>
-          <button onClick={() => setSelectedItemTag?.(null)} className="px-3 py-1 border rounded">Clear Sel</button>
+          {/* optional copy/paste buttons for users who prefer clicks */}
+          <button
+            onClick={() => {
+              if (!selectedItemTag) return alert("Select an item first to copy");
+              const found = items.find((it) => String(it.tag) === String(selectedItemTag) || String(it.id) === String(selectedItemTag));
+              if (found) {
+                setCopiedItem(JSON.parse(JSON.stringify(found)));
+                copiedRef.current = JSON.parse(JSON.stringify(found));
+                alert("Item copied — press Ctrl+V to paste");
+              }
+            }}
+            className="px-3 py-1 border rounded text-sm"
+          >
+            Copy (Ctrl+C)
+          </button>
+          <button
+            onClick={() => {
+              const clip = copiedRef.current || copiedItem;
+              if (!clip) return alert("No copied item. Use Ctrl+C or the Copy button first.");
+              onDuplicateItem?.({ ...clip, company: clip.company || selectedCompany });
+            }}
+            className="px-3 py-1 border rounded text-sm"
+          >
+            Paste (Ctrl+V)
+          </button>
         </div>
 
         <div className="text-sm text-gray-600">
@@ -175,8 +249,35 @@ export default function ItemManager({
                   <td className="p-2 border">{it.identifier || "-"}</td>
                   <td className="p-2 border text-center">
                     <div className="flex gap-2 justify-center">
-                      <button onClick={(e) => { e.stopPropagation(); startEdit(it); }} className="px-2 py-1 border rounded text-xs">Edit</button>
-                      <button onClick={(e) => handleDelete(e, it.tag || it.id)} className="px-2 py-1 border rounded text-xs text-red-600">Del</button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // copy single item with click
+                          setCopiedItem(JSON.parse(JSON.stringify(it)));
+                          copiedRef.current = JSON.parse(JSON.stringify(it));
+                          alert("Item copied — press Ctrl+V to paste");
+                        }}
+                        className="px-2 py-1 border rounded text-xs text-green-700"
+                      >
+                        Copy
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startEdit(it);
+                        }}
+                        className="px-2 py-1 border rounded text-xs"
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        onClick={(e) => handleDelete(e, it.tag || it.id)}
+                        className="px-2 py-1 border rounded text-xs text-red-600"
+                      >
+                        Del
+                      </button>
                     </div>
                   </td>
                 </tr>

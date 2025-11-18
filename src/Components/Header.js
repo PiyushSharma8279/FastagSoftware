@@ -1,6 +1,7 @@
-// src/components/Header/Header.js
+// src/components/Header.js
 import React, { useState, useRef, useEffect } from "react";
 import { FiChevronDown, FiMenu } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 
 export default function Header({
   onAddCompany,
@@ -9,16 +10,22 @@ export default function Header({
   onAddItem,
   onEditItem,
   onDeleteItem,
-  onNavigate,
+  onNavigate
 }) {
+
   const [openMenu, setOpenMenu] = useState(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const headerRef = useRef(null);
+  const navigate = useNavigate();
 
-  const toggleMenu = (menu) => setOpenMenu(openMenu === menu ? null : menu);
+  const toggleMenu = (menu) => {
+    setOpenMenu(openMenu === menu ? null : menu);
+  };
 
+  // Close when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (headerRef.current && !headerRef.current.contains(event.target)) {
+    const handleClickOutside = (e) => {
+      if (headerRef.current && !headerRef.current.contains(e.target)) {
         setOpenMenu(null);
       }
     };
@@ -27,155 +34,202 @@ export default function Header({
   }, []);
 
   return (
-    <div ref={headerRef} className="relative select-none bg-white shadow-sm">
-      <div className="max-w-screen-xl mx-auto px-4 py-3 flex items-center justify-left gap-10">
-        
-        {/* LOGO */}
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded bg-gradient-to-br from-red-400 to-red-600 text-white font-bold flex items-center justify-center">
-            PQ
+    <header className="bg-white shadow p-3" ref={headerRef}>
+      <div className="max-w-screen-xl mx-auto flex justify-between items-center">
+
+        {/* ---------------- LEFT LOGO + NAV ---------------- */}
+        <div className="flex items-center gap-4">
+          
+          {/* Logo */}
+          <div
+            onClick={() => onNavigate?.("dashboard")}
+            className="font-bold text-xl cursor-pointer"
+          >
+            FastTag
           </div>
-          <div className="text-xl font-bold">PowerQ</div>
+
+          {/* Desktop Nav */}
+          <nav className="hidden md:flex gap-2 text-sm text-gray-600">
+
+            <button
+              onClick={() => onNavigate?.("dashboard")}
+              className="px-2 py-1 hover:bg-gray-50 rounded"
+            >
+              Dashboard
+            </button>
+
+            {/* Reports Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => toggleMenu("reports")}
+                className={`px-3 py-1 rounded flex items-center ${
+                  openMenu === "reports" ? "bg-gray-100" : "hover:bg-gray-50"
+                }`}
+              >
+                Reports <FiChevronDown className="ml-1" />
+              </button>
+
+              {openMenu === "reports" && (
+                <div className="absolute mt-2 w-56 bg-white border rounded shadow z-50">
+                  <div
+                    className="p-2 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => onNavigate("report:companies")}
+                  >
+                    Companies Report
+                  </div>
+
+                  <div
+                    className="p-2 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => onNavigate("report:inspection")}
+                  >
+                    Inspection Report
+                  </div>
+
+                  <div
+                    className="p-2 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => onNavigate("report:newitemform")}
+                  >
+                    New Item Form
+                  </div>
+
+                  <div
+                    className="p-2 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => onNavigate("report:failed")}
+                  >
+                    Failed Equipment
+                  </div>
+                </div>
+              )}
+            </div>
+          </nav>
         </div>
 
-        {/* DESKTOP MENU */}
-        <nav className="hidden md:flex gap-3 text-sm items-center">
-          
-          {/* FILE */}
-          <div className="relative">
-            <button
-              onClick={() => toggleMenu("file")}
-              className={`px-3 py-1 rounded ${openMenu === "file" ? "bg-gray-100" : "hover:bg-gray-50"}`}
-            >
-              File <FiChevronDown className="inline-block ml-1" />
-            </button>
+        {/* ---------------- RIGHT ACTION BUTTONS ---------------- */}
+        <div className="hidden md:flex items-center gap-2">
 
-            {openMenu === "file" && (
-              <div className="absolute mt-2 w-44 bg-white border rounded shadow z-40">
-                <div className="p-2 hover:bg-gray-50 cursor-pointer">New</div>
-                <div className="p-2 hover:bg-gray-50 cursor-pointer">Open</div>
-                <div className="p-2 hover:bg-gray-50 cursor-pointer">Save As...</div>
-              </div>
-            )}
-          </div>
+          {/* Company Buttons */}
+          <button onClick={onAddCompany} className="px-2 py-1 bg-green-600 text-white rounded text-sm">
+            Add Company
+          </button>
+          <button onClick={onEditCompany} className="px-2 py-1 border rounded text-sm">
+            Edit Company
+          </button>
+          <button onClick={onDeleteCompany} className="px-2 py-1 border rounded text-sm text-red-600">
+            Del Company
+          </button>
 
-          {/* EDIT */}
-          <div className="relative">
-            <button
-              onClick={() => toggleMenu("edit")}
-              className={`px-3 py-1 rounded ${openMenu === "edit" ? "bg-gray-100" : "hover:bg-gray-50"}`}
-            >
-              Edit <FiChevronDown className="inline-block ml-1" />
-            </button>
+          <div className="w-px h-6 bg-gray-200 mx-2" />
 
-            {openMenu === "edit" && (
-              <div className="absolute mt-2 w-56 bg-white border rounded shadow z-40">
+          {/* Item Buttons */}
+          <button onClick={onAddItem} className="px-2 py-1 bg-blue-600 text-white rounded text-sm">
+            Add Item
+          </button>
+          <button onClick={onEditItem} className="px-2 py-1 border rounded text-sm">
+            Edit Item
+          </button>
+          <button onClick={onDeleteItem} className="px-2 py-1 border rounded text-sm text-red-600">
+            Del Item
+          </button>
 
-                <div className="p-2 hover:bg-gray-50 cursor-pointer" onClick={() => { setOpenMenu(null); onAddCompany?.(); }}>
-                  Add Company
-                </div>
+          <button
+            onClick={() => navigate("/login")}
+            className="px-2 py-1 border rounded text-sm text-blue-500"
+          >
+            Login
+          </button>
+        </div>
 
-                <div className="p-2 hover:bg-gray-50 cursor-pointer" onClick={() => { setOpenMenu(null); onEditCompany?.(); }}>
-                  Edit Company
-                </div>
+        {/* ---------------- MOBILE BURGER ---------------- */}
+        <button
+          className="md:hidden p-2"
+          onClick={() => setMobileOpen(!mobileOpen)}
+        >
+          <FiMenu size={24} />
+        </button>
 
-                <div className="p-2 hover:bg-gray-50 cursor-pointer" onClick={() => { setOpenMenu(null); onDeleteCompany?.(); }}>
-                  Delete Company
-                </div>
+      </div>
 
-                <hr />
+      {/* ---------------- MOBILE MENU ---------------- */}
+      {mobileOpen && (
+        <div className="md:hidden mt-3 bg-white border rounded shadow p-3 flex flex-col gap-2 text-sm">
 
-                <div className="p-2 hover:bg-gray-50 cursor-pointer" onClick={() => { setOpenMenu(null); onAddItem?.(); }}>
-                  Add Item
-                </div>
+          <button onClick={() => onNavigate("dashboard")} className="p-2 hover:bg-gray-50 rounded">
+            Dashboard
+          </button>
 
-                <div className="p-2 hover:bg-gray-50 cursor-pointer" onClick={() => { setOpenMenu(null); onEditItem?.(); }}>
-                  Edit Item
-                </div>
-
-                <div className="p-2 hover:bg-gray-50 cursor-pointer" onClick={() => { setOpenMenu(null); onDeleteItem?.(); }}>
-                  Delete Item
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* REPORTS */}
-          <div className="relative">
+          {/* Reports Mobile */}
+          <div>
             <button
               onClick={() => toggleMenu("reports")}
-              className={`px-3 py-1 rounded ${openMenu === "reports" ? "bg-gray-100" : "hover:bg-gray-50"}`}
+              className="p-2 w-full text-left hover:bg-gray-50 rounded flex items-center"
             >
-              Reports <FiChevronDown className="inline-block ml-1" />
+              Reports <FiChevronDown className="ml-auto" />
             </button>
 
             {openMenu === "reports" && (
-              <div className="absolute mt-2 w-64 bg-white border rounded shadow z-40">
-
-                <div className="p-2 hover:bg-gray-50 cursor-pointer" onClick={() => onNavigate("report:companies")}>
+              <div className="mt-1 border rounded">
+                <div
+                  className="p-2 hover:bg-gray-50"
+                  onClick={() => onNavigate("report:companies")}
+                >
                   Companies Report
                 </div>
-
-                <div className="p-2 hover:bg-gray-50 cursor-pointer" onClick={() => onNavigate("report:inspection")}>
+                <div
+                  className="p-2 hover:bg-gray-50"
+                  onClick={() => onNavigate("report:inspection")}
+                >
                   Inspection Report
                 </div>
-
-                <div className="p-2 hover:bg-gray-50 cursor-pointer" onClick={() => onNavigate("report:newitemform")}>
+                <div
+                  className="p-2 hover:bg-gray-50"
+                  onClick={() => onNavigate("report:newitemform")}
+                >
                   New Item Form
                 </div>
-
-                <div className="p-2 hover:bg-gray-50 cursor-pointer" onClick={() => onNavigate("report:failed")}>
+                <div
+                  className="p-2 hover:bg-gray-50"
+                  onClick={() => onNavigate("report:failed")}
+                >
                   Failed Equipment
                 </div>
               </div>
             )}
           </div>
 
-        </nav>
+          <hr />
 
-        {/* MOBILE MENU BUTTON */}
-        <button
-          className="md:hidden p-2 rounded hover:bg-gray-100"
-          onClick={() => toggleMenu("mobile")}
-        >
-          <FiMenu />
-        </button>
-      </div>
+          {/* Mobile Company Buttons */}
+          <button onClick={onAddCompany} className="p-2 bg-green-600 text-white rounded">
+            Add Company
+          </button>
+          <button onClick={onEditCompany} className="p-2 border rounded">
+            Edit Company
+          </button>
+          <button onClick={onDeleteCompany} className="p-2 border rounded text-red-600">
+            Del Company
+          </button>
 
-      {/* FULL MOBILE MENU */}
-      {openMenu === "mobile" && (
-        <div className="md:hidden bg-white border-t shadow text-sm p-2 space-y-2">
+          <hr />
 
-          {/* FILE */}
-          <div className="font-semibold text-gray-700">File</div>
-          <div className="ml-3 space-y-1">
-            <div className="p-2 hover:bg-gray-100 rounded">New</div>
-            <div className="p-2 hover:bg-gray-100 rounded">Open</div>
-            <div className="p-2 hover:bg-gray-100 rounded">Save As...</div>
-          </div>
+          {/* Mobile Item Buttons */}
+          <button onClick={onAddItem} className="p-2 bg-blue-600 text-white rounded">
+            Add Item
+          </button>
+          <button onClick={onEditItem} className="p-2 border rounded">
+            Edit Item
+          </button>
+          <button onClick={onDeleteItem} className="p-2 border rounded text-red-600">
+            Del Item
+          </button>
 
-          {/* EDIT */}
-          <div className="font-semibold text-gray-700 mt-2">Edit</div>
-          <div className="ml-3 space-y-1">
-            <div className="p-2 hover:bg-gray-100 rounded" onClick={onAddCompany}>Add Company</div>
-            <div className="p-2 hover:bg-gray-100 rounded" onClick={onEditCompany}>Edit Company</div>
-            <div className="p-2 hover:bg-gray-100 rounded" onClick={onDeleteCompany}>Delete Company</div>
-            <div className="p-2 hover:bg-gray-100 rounded" onClick={onAddItem}>Add Item</div>
-            <div className="p-2 hover:bg-gray-100 rounded" onClick={onEditItem}>Edit Item</div>
-            <div className="p-2 hover:bg-gray-100 rounded" onClick={onDeleteItem}>Delete Item</div>
-          </div>
-
-          {/* REPORTS */}
-          <div className="font-semibold text-gray-700 mt-2">Reports</div>
-          <div className="ml-3 space-y-1">
-            <div className="p-2 hover:bg-gray-100 rounded" onClick={() => onNavigate("report:companies")}>Companies</div>
-            <div className="p-2 hover:bg-gray-100 rounded" onClick={() => onNavigate("report:inspection")}>Inspection</div>
-            <div className="p-2 hover:bg-gray-100 rounded" onClick={() => onNavigate("report:newitemform")}>New Item Form</div>
-            <div className="p-2 hover:bg-gray-100 rounded" onClick={() => onNavigate("report:failed")}>Failed Equipment</div>
-          </div>
-
+          <button
+            onClick={() => navigate("/login")}
+            className="p-2 border rounded text-blue-500"
+          >
+            Login
+          </button>
         </div>
       )}
-    </div>
+    </header>
   );
 }
