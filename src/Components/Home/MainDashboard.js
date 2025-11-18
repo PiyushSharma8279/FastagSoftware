@@ -1,50 +1,51 @@
-import React, { useEffect, useState, useRef } from "react";
-
-import { generateNextTagForDate } from "../../utils";
+// src/pages/MainDashboard.js
+import React, { useEffect, useState } from "react";
 import Header from "../Header";
 import CompanyManager from "./CompanyManager";
 import ItemManager from "./ItemManager";
+import Reports from "../Reports/Reports";
+import { generateItemId, generateCompanyId } from "../../utils";
 
-
-const STORAGE_KEY = "fasttag_companies_v1";
+const STORAGE_KEY = "fasttag_companies_v2";
 
 export default function MainDashboard() {
+  // load from localStorage or start empty (no sample companies)
   const [companies, setCompanies] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+      return []; // no seed data
     } catch {
       return [];
     }
   });
 
-  // UI state
-  const [selectedCompany, setSelectedCompany] = useState(
-    companies[0]?.name || ""
-  );
+  // flatten items for reports and aggregated views
+  const items = companies.flatMap((c) => (c.items || []).map((it) => ({ ...it, company: c.name })));
+
+  const [selectedCompany, setSelectedCompany] = useState(companies[0]?.name || "");
   const [selectedItemTag, setSelectedItemTag] = useState(null);
-  const [copiedItem, setCopiedItem] = useState(null);
   const [showAllCompanies, setShowAllCompanies] = useState(false);
 
-  // Header -> component control flags
-  const [headerOpenAddCompany, setHeaderOpenAddCompany] = useState(false);
-  const [headerEditCompanyName, setHeaderEditCompanyName] = useState(null);
+  // external header triggers (wires header menu -> child components)
+  const [externalAddCompany, setExternalAddCompany] = useState(false);
+  const [externalEditCompany, setExternalEditCompany] = useState(null);
 
-  const [headerOpenAddItem, setHeaderOpenAddItem] = useState(false);
-  const [headerEditItemTag, setHeaderEditItemTag] = useState(null);
+  const [externalOpenAddItem, setExternalOpenAddItem] = useState(false);
+  const [externalEditItemTag, setExternalEditItemTag] = useState(null);
 
-  // Undo stack
-  const undoStackRef = useRef([]);
-  const pushHistory = (prev) => {
-    undoStackRef.current.push(JSON.parse(JSON.stringify(prev)));
-    if (undoStackRef.current.length > 50) undoStackRef.current.shift();
-  };
+  // view / report state
+  const [view, setView] = useState("dashboard"); // "dashboard" | "report"
+  const [selectedReport, setSelectedReport] = useState("companies");
 
-  // persist
+  // persist companies
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(companies));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(companies));
+    } catch {}
   }, [companies]);
 
-  // ensure selectedCompany valid
+  // ensure selectedCompany remains valid
   useEffect(() => {
     if (!selectedCompany && companies.length > 0) {
       setSelectedCompany(companies[0].name);
@@ -54,148 +55,97 @@ export default function MainDashboard() {
     }
   }, [companies, selectedCompany]);
 
-  // Keyboard shortcuts: Ctrl+C, Ctrl+V, Ctrl+Z
-  useEffect(() => {
-    const handler = (e) => {
-      if (!e.ctrlKey && !e.metaKey) return;
-      const key = e.key.toLowerCase();
-
-      if (key === "c") {
-        e.preventDefault();
-        if (!selectedItemTag) return;
-        const comp = companies.find((c) => c.name === selectedCompany);
-        const item = comp?.items?.find((i) => i.tag === selectedItemTag);
-        if (item) {
-          setCopiedItem(item);
-          console.log("Copied item:", item);
-        }
-      }
-
-      if (key === "v") {
-        e.preventDefault();
-        if (!copiedItem) return;
-        if (!selectedCompany) {
-          alert("Select a company to paste into.");
-          return;
-        }
-        pushHistory(companies);
-        setCompanies((prev) =>
-          prev.map((c) =>
-            c.name === selectedCompany
-              ? {
-                  ...c,
-                  items: [
-                    ...(c.items || []),
-                    {
-                      ...copiedItem,
-                      tag: generateNextTagForDate(prev),
-                    },
-                  ],
-                }
-              : c
-          )
-        );
-      }
-
-      if (key === "z") {
-        e.preventDefault();
-        const prev = undoStackRef.current.pop();
-        if (prev) {
-          setCompanies(prev);
-          if (prev.length > 0) setSelectedCompany(prev[0].name);
-          setSelectedItemTag(null);
-        } else {
-          console.log("Nothing to undo");
-        }
-      }
-
-      // quick header shortcuts (optional)
-      if (key === "a" && (e.ctrlKey || e.metaKey)) {
-        // Ctrl/Cmd + A => open Add Item via header
-        e.preventDefault();
-        handleHeaderAddItem();
-      }
-      if (key === "e" && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        handleHeaderEditItem();
-      }
-      if (key === "d" && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        handleHeaderDeleteItem();
-      }
-    };
-
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [companies, selectedItemTag, selectedCompany, copiedItem]);
-
+  // -----------------------
   // Company actions
+  // -----------------------
   const addCompany = (companyData) => {
-    pushHistory(companies);
-    const newC = { ...companyData, items: [] };
-    const updated = [...companies, newC];
-    setCompanies(updated);
-    setSelectedCompany(companyData.name);
+    // companyData expected to be object (id, name, address, email, phone, contactPerson, notes)
+    const id = companyData?.id ?? generateCompanyId(companies);
+    const newC = { ...companyData, id, items: companyData.items || [] };
+    setCompanies((prev) => [...prev, newC]);
+    setSelectedCompany(newC.name);
   };
 
-  const editCompany = (name, updates) => {
-    pushHistory(companies);
-    setCompanies((prev) => prev.map((c) => (c.name === name ? { ...c, ...updates } : c)));
-    if (updates.name && updates.name !== name) {
-      setSelectedCompany(updates.name);
-    }
+  const editCompany = (oldName, updates) => {
+    setCompanies((prev) => prev.map((c) => (c.name === oldName ? { ...c, ...updates } : c)));
+    if (updates.name && updates.name !== oldName) setSelectedCompany(updates.name);
   };
 
   const deleteCompany = (name) => {
     if (!window.confirm(`Delete company "${name}" and all its items?`)) return;
-    pushHistory(companies);
-    const updated = companies.filter((c) => c.name !== name);
-    setCompanies(updated);
+    setCompanies((prev) => prev.filter((c) => c.name !== name));
     setSelectedItemTag(null);
-    if (updated.length > 0) setSelectedCompany(updated[0].name);
-    else setSelectedCompany("");
+    // pick a new selected company if any remain
+    setTimeout(() => {
+      const after = companies.filter((c) => c.name !== name);
+      if (after.length > 0) setSelectedCompany(after[0].name);
+      else setSelectedCompany("");
+    }, 0);
   };
 
-  // Item actions
+  // -----------------------
+  // Item actions (nested under the company)
+  // -----------------------
   const addItem = (itemData) => {
-    if (!selectedCompany) {
-      alert("Select a company first.");
+    if (!itemData?.company) {
+      alert("Please select a company for the item.");
       return;
     }
-    pushHistory(companies);
+
     setCompanies((prev) =>
       prev.map((c) =>
-        c.name === selectedCompany
-          ? { ...c, items: [...(c.items || []), { ...itemData, tag: generateNextTagForDate(prev) }] }
+        c.name === itemData.company
+          ? {
+              ...c,
+              items: [
+                ...(c.items || []),
+                {
+                  ...itemData,
+                  id: generateItemId(c.items || []),
+                },
+              ],
+            }
           : c
       )
     );
   };
 
-  const editItem = (tag, updates) => {
-    pushHistory(companies);
+  const editItem = (tagOrId, updates) => {
     setCompanies((prev) =>
       prev.map((c) => ({
         ...c,
-        items: (c.items || []).map((it) => (it.tag === tag ? { ...it, ...updates } : it)),
+        items: (c.items || []).map((it) => {
+          if (it.tag === tagOrId || String(it.id) === String(tagOrId)) {
+            return { ...it, ...updates };
+          }
+          return it;
+        }),
       }))
     );
   };
 
-  const deleteItem = (tag) => {
-    pushHistory(companies);
+  const deleteItem = (tagOrId) => {
+    if (!window.confirm("Delete selected item?")) return;
     setCompanies((prev) =>
-      prev.map((c) => ({ ...c, items: (c.items || []).filter((it) => it.tag !== tag) })))
-    ;
+      prev.map((c) => ({ ...c, items: (c.items || []).filter((it) => !(it.tag === tagOrId || String(it.id) === String(tagOrId))) }))
+    );
     setSelectedItemTag(null);
   };
 
-  // Header handlers (connected to menu)
-  const handleHeaderAddCompany = () => setHeaderOpenAddCompany(true);
+  // -----------------------
+  // Header handlers (wired to Header menu)
+  // -----------------------
+  const handleHeaderAddCompany = () => {
+    setExternalAddCompany(true);
+    setView("dashboard");
+  };
+
   const handleHeaderEditCompany = () => {
     if (!selectedCompany) return alert("Select a company first.");
-    setHeaderEditCompanyName(selectedCompany);
+    setExternalEditCompany(selectedCompany);
+    setView("dashboard");
   };
+
   const handleHeaderDeleteCompany = () => {
     if (!selectedCompany) return alert("Select a company first.");
     if (window.confirm(`Delete company "${selectedCompany}"?`)) {
@@ -205,12 +155,16 @@ export default function MainDashboard() {
 
   const handleHeaderAddItem = () => {
     if (!selectedCompany) return alert("Select a company first.");
-    setHeaderOpenAddItem(true);
+    setExternalOpenAddItem(true);
+    setView("dashboard");
   };
+
   const handleHeaderEditItem = () => {
     if (!selectedItemTag) return alert("Select an item first.");
-    setHeaderEditItemTag(selectedItemTag);
+    setExternalEditItemTag(selectedItemTag);
+    setView("dashboard");
   };
+
   const handleHeaderDeleteItem = () => {
     if (!selectedItemTag) return alert("Select an item first.");
     if (window.confirm(`Delete item "${selectedItemTag}"?`)) {
@@ -218,13 +172,21 @@ export default function MainDashboard() {
     }
   };
 
-  // Show All companies aggregated items
-  const aggregatedItems = companies.flatMap((c) =>
-    (c.items || []).map((it) => ({ ...it, company: c.name }))
-  );
+  // Navigate from header (reports)
+  const handleNavigate = (nav) => {
+    if (String(nav).startsWith("report:")) {
+      setSelectedReport(nav.split(":")[1]);
+      setView("report");
+    } else {
+      setView("dashboard");
+    }
+  };
 
+  // -----------------------
+  // Render
+  // -----------------------
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 text-[13px]">
+    <div className="min-h-screen bg-slate-50">
       <Header
         onAddCompany={handleHeaderAddCompany}
         onEditCompany={handleHeaderEditCompany}
@@ -232,96 +194,104 @@ export default function MainDashboard() {
         onAddItem={handleHeaderAddItem}
         onEditItem={handleHeaderEditItem}
         onDeleteItem={handleHeaderDeleteItem}
+        onNavigate={handleNavigate}
       />
 
-      <div className="flex flex-1 overflow-hidden p-4 gap-4">
-        <div className="w-80 glass-card p-3">
-          <CompanyManager
-            companies={companies}
-            selectedCompany={selectedCompany}
-            setSelectedCompany={(name) => {
-              setSelectedCompany(name);
-              setSelectedItemTag(null);
-            }}
-            onAddCompany={addCompany}
-            onEditCompany={editCompany}
-            onDeleteCompany={deleteCompany}
-            showAllCompanies={showAllCompanies}
-            setShowAllCompanies={setShowAllCompanies}
-
-            // external header triggers
-            externalAddCompany={headerOpenAddCompany}
-            setExternalAddCompany={setHeaderOpenAddCompany}
-            externalEditCompany={headerEditCompanyName}
-            setExternalEditCompany={setHeaderEditCompanyName}
-          />
-        </div>
-
-        <div className="flex-1 flex flex-col glass-card p-3 overflow-hidden">
-          <div className="p-2 border-b border-white/40 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <h2 className="font-semibold text-lg">
-                {showAllCompanies ? "All Companies (Aggregate)" : `Company: ${selectedCompany || "N/A"}`}
-              </h2>
-              <div className="text-sm text-gray-600">Companies: {companies.length}</div>
+      <div className="max-w-screen-xl mx-auto p-4">
+        {view === "dashboard" && (
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* sidebar: visible on mobile & desktop (so add modal works on mobile) */}
+            <div className="w-full md:w-80">
+              <CompanyManager
+                companies={companies}
+                selectedCompany={selectedCompany}
+                setSelectedCompany={(name) => {
+                  setSelectedCompany(name);
+                  setSelectedItemTag(null);
+                }}
+                onAddCompany={addCompany}
+                onEditCompany={editCompany}
+                onDeleteCompany={deleteCompany}
+                showAllCompanies={showAllCompanies}
+                setShowAllCompanies={setShowAllCompanies}
+                externalAddCompany={externalAddCompany}
+                setExternalAddCompany={setExternalAddCompany}
+                externalEditCompany={externalEditCompany}
+                setExternalEditCompany={setExternalEditCompany}
+              />
             </div>
 
-            <div className="flex items-center gap-3 text-xs">
-              <div className="px-2 py-1 bg-white/60 rounded border">
-                Copied: {copiedItem ? `${copiedItem.name} (${copiedItem.tag})` : "None"}
+            {/* main */}
+            <div className="flex-1">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <label className="hidden md:inline-block text-sm text-gray-700 mr-2">Company:</label>
+                  <select
+                    className="border rounded px-2 py-1 text-sm"
+                    value={selectedCompany}
+                    onChange={(e) => {
+                      setSelectedCompany(e.target.value);
+                      setSelectedItemTag(null);
+                    }}
+                  >
+                    <option value="">-- Select Company --</option>
+                    {companies.map((c) => (
+                      <option value={c.name} key={c.id ?? c.name}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex gap-2">
+                  <button onClick={handleHeaderAddCompany} className="px-3 py-1 bg-red-500 text-white rounded">
+                    Add New Company
+                  </button>
+                  <button onClick={handleHeaderAddItem} className="px-3 py-1 bg-green-600 text-white rounded">
+                    Add Item
+                  </button>
+                </div>
               </div>
-              <div className="px-2 py-1 bg-white/60 rounded border">
-                Undo stack: {undoStackRef.current.length}
-              </div>
-              <div className="px-2 py-1 bg-white/60 rounded border select-none">
-                Shortcuts: Ctrl+C • Ctrl+V • Ctrl+Z
+
+              <div className="bg-white rounded shadow">
+                <ItemManager
+                  items={showAllCompanies ? items : items.filter((it) => it.company === selectedCompany)}
+                  selectedCompany={selectedCompany}
+                  onAddItem={(item) => addItem(item.company || selectedCompany, item)}
+                  onEditItem={(tagOrId, updates) => editItem(tagOrId, updates)}
+                  onDeleteItem={(tagOrId) => deleteItem(tagOrId)}
+                  setSelectedItemTag={setSelectedItemTag}
+                  selectedItemTag={selectedItemTag}
+                  companies={companies}
+                  showAllCompanies={showAllCompanies}
+                  externalOpenAdd={externalOpenAddItem}
+                  setExternalOpenAdd={setExternalOpenAddItem}
+                  externalEditTag={externalEditItemTag}
+                  setExternalEditTag={setExternalEditItemTag}
+                />
               </div>
             </div>
           </div>
+        )}
 
-          <div className="flex-1 overflow-auto mt-3">
-            <ItemManager
-              items={showAllCompanies ? aggregatedItems : companies.find((c) => c.name === selectedCompany)?.items || []}
-              selectedCompany={selectedCompany}
-              onAddItem={addItem}
-              onEditItem={editItem}
-              onDeleteItem={deleteItem}
-              setSelectedItemTag={setSelectedItemTag}
-              selectedItemTag={selectedItemTag}
-              companies={companies}
-              showAllCompanies={showAllCompanies}
+        {view === "report" && (
+          <div className="bg-white rounded shadow">
+            <div className="p-3 border-b flex items-center justify-between">
+              <h2 className="font-semibold">Reports / {selectedReport}</h2>
+              <div>
+                <button
+                  onClick={() => setView("dashboard")}
+                  className="px-3 py-1 border rounded"
+                >
+                  Back
+                </button>
+              </div>
+            </div>
 
-              // header triggers for add/edit
-              externalOpenAdd={headerOpenAddItem}
-              setExternalOpenAdd={setHeaderOpenAddItem}
-              externalEditTag={headerEditItemTag}
-              setExternalEditTag={setHeaderEditItemTag}
-            />
+            <Reports selectedReport={selectedReport} companies={companies} items={items} />
           </div>
-        </div>
+        )}
       </div>
-
-      <div className="p-2 text-xs bg-white/60 border-t border-white/30 flex justify-between glass-card-footer">
-        <span>Data file: FASTtag</span>
-        <span>
-          {companies.length} companies, {aggregatedItems.length} total items
-          {selectedCompany ? ` · Selected: ${selectedCompany}` : ""}
-        </span>
-      </div>
-
-      {/* Tailwind utility classes for glass look (if you prefer you can put in your global CSS) */}
-      <style>{`
-        .glass-card {
-          background: rgba(255,255,255,0.55);
-          backdrop-filter: blur(8px);
-          border-radius: 12px;
-          box-shadow: 0 6px 18px rgba(13, 22, 39, 0.06);
-        }
-        .glass-card-footer {
-          background: linear-gradient(90deg, rgba(255,255,255,0.6), rgba(250,250,250,0.4));
-          backdrop-filter: blur(6px);
-        }
-      `}</style>
     </div>
   );
 }

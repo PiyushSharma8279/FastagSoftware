@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+// src/components/CompanyManager/CompanyManager.js
+import React, { useEffect, useState } from "react";
+import { generateCompanyId } from "../../utils";
 
 export default function CompanyManager({
-  companies,
+  companies = [],
   selectedCompany,
   setSelectedCompany,
   onAddCompany,
@@ -9,29 +11,52 @@ export default function CompanyManager({
   onDeleteCompany,
   showAllCompanies,
   setShowAllCompanies,
+  externalAddCompany,
+  setExternalAddCompany,
+  externalEditCompany,
+  setExternalEditCompany,
 }) {
-  const [showAdd, setShowAdd] = useState(false);
-  const [editing, setEditing] = useState(null);
-
   const initialForm = {
+    id: null,
     name: "",
     address: "",
-    suburb: "",
-    state: "",
-    postcode: "",
-    country: "",
-    contactName: "",
-    phone: "",
-    fax: "",
     email: "",
-    comments: "",
+    phone: "",
+    contactPerson: "",
+    notes: "",
+    items: [],
   };
 
+  const [showAdd, setShowAdd] = useState(false);
+  const [editing, setEditing] = useState(null);
   const [companyForm, setCompanyForm] = useState(initialForm);
+
+  // respond to header triggers
+  useEffect(() => {
+    if (externalAddCompany) {
+      setShowAdd(true);
+      setExternalAddCompany?.(false);
+    }
+  }, [externalAddCompany, setExternalAddCompany]);
+
+  useEffect(() => {
+    if (externalEditCompany) {
+      const c = companies.find((x) => x.name === externalEditCompany || x.id === externalEditCompany);
+      if (c) {
+        setEditing(c.name);
+        setCompanyForm({ ...c });
+      } else {
+        alert("Company to edit not found");
+      }
+      setExternalEditCompany?.(null);
+    }
+  }, [externalEditCompany, companies, setExternalEditCompany]);
 
   const handleAdd = () => {
     if (!companyForm.name.trim()) return alert("Company name required");
-    onAddCompany({ ...companyForm });
+    const id = generateCompanyId(companies);
+    const newCompany = { ...companyForm, id, items: companyForm.items || [] };
+    onAddCompany?.(newCompany);
     setCompanyForm(initialForm);
     setShowAdd(false);
   };
@@ -43,59 +68,45 @@ export default function CompanyManager({
 
   const saveEdit = (oldName) => {
     if (!companyForm.name.trim()) return alert("Company name required");
-    onEditCompany(oldName, { ...companyForm });
+    onEditCompany?.(oldName, { ...companyForm });
     setEditing(null);
     setCompanyForm(initialForm);
   };
 
   return (
-    <div className="w-64 border-r bg-white flex flex-col">
-      {/* Header */}
-      <div className="p-2 border-b flex items-center justify-between">
+    <div className="flex flex-col h-full">
+      <div className="p-3 border-b flex items-center justify-between">
         <h3 className="font-semibold">Companies</h3>
         <label className="text-xs flex items-center gap-2">
           <input
             type="checkbox"
             checked={showAllCompanies}
-            onChange={(e) => setShowAllCompanies(e.target.checked)}
+            onChange={(e) => setShowAllCompanies?.(e.target.checked)}
           />
           Show All
         </label>
       </div>
 
-      {/* List */}
-      <div className="p-2 flex-1 overflow-auto">
+      <div className="p-3 overflow-auto flex-1">
         <div className="flex flex-col gap-2">
-          {companies.length === 0 && (
-            <div className="text-gray-500 text-sm">No companies yet</div>
-          )}
-
+          {companies.length === 0 && <div className="text-gray-500 text-sm">No companies yet</div>}
           {companies.map((c) => (
             <div
-              key={c.name}
+              key={c.id}
               className={`p-2 rounded border flex justify-between items-center cursor-pointer ${
-                c.name === selectedCompany
-                  ? "bg-blue-50 border-blue-200"
-                  : "hover:bg-gray-50"
+                c.name === selectedCompany ? "bg-blue-50 border-blue-200" : "hover:bg-gray-50"
               }`}
             >
-              <div onClick={() => setSelectedCompany(c.name)}>
-                <div className="font-medium">{c.name}</div>
-                {c.address && (
-                  <div className="text-xs text-gray-500">{c.address}</div>
-                )}
-                <div className="text-xs text-gray-400">
-                  {(c.items || []).length} items
-                </div>
+              <div className="flex-1" onClick={() => setSelectedCompany?.(c.name)}>
+                <div className="font-medium truncate">{c.name}</div>
+                {c.address && <div className="text-xs text-gray-500 truncate">{c.address}</div>}
+                <div className="text-xs text-gray-400">{(c.items || []).length} items</div>
               </div>
 
-              <div className="flex flex-col items-end gap-1">
+              <div className="flex items-center gap-2">
                 {editing === c.name ? (
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => saveEdit(c.name)}
-                      className="text-xs px-2 py-1 border rounded"
-                    >
+                  <>
+                    <button onClick={() => saveEdit(c.name)} className="text-xs px-2 py-1 border rounded">
                       Save
                     </button>
                     <button
@@ -107,23 +118,15 @@ export default function CompanyManager({
                     >
                       Cancel
                     </button>
-                  </div>
+                  </>
                 ) : (
                   <>
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => startEdit(c)}
-                        className="text-xs px-2 py-1 border rounded"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => onDeleteCompany(c.name)}
-                        className="text-xs px-2 py-1 border rounded text-red-600"
-                      >
-                        Del
-                      </button>
-                    </div>
+                    <button onClick={() => startEdit(c)} className="text-xs px-2 py-1 border rounded">
+                      Edit
+                    </button>
+                    <button onClick={() => onDeleteCompany?.(c.name)} className="text-xs px-2 py-1 border rounded text-red-600">
+                      Del
+                    </button>
                   </>
                 )}
               </div>
@@ -132,69 +135,48 @@ export default function CompanyManager({
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="p-2 border-t">
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowAdd(true)}
-            className="flex-1 bg-gray-200 py-1 rounded border"
-          >
-            Add Company
-          </button>
-          <button
-            onClick={() => {
-              if (companies.length > 0)
-                setSelectedCompany(companies[0].name);
-            }}
-            className="py-1 px-2 border rounded"
-          >
-            First
-          </button>
-        </div>
+      <div className="p-3 border-t flex gap-2">
+        <button
+          onClick={() => {
+            setShowAdd(true);
+            setExternalAddCompany?.(true);
+          }}
+          className="flex-1 bg-green-600 text-white py-2 rounded"
+        >
+          Add Company
+        </button>
+        <button
+          onClick={() => {
+            if (companies.length > 0) setSelectedCompany?.(companies[0].name);
+          }}
+          className="py-2 px-3 border rounded"
+        >
+          First
+        </button>
       </div>
 
-      {/* Add Company Modal */}
+      {/* Add / Edit Modal */}
       {showAdd && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white rounded shadow-lg p-4 w-96 max-h-[90vh] overflow-auto">
-            <h2 className="font-semibold mb-2">Add Company</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowAdd(false)} />
+          <div className="relative bg-white rounded shadow-lg max-w-md w-full p-4 max-h-[90vh] overflow-auto">
+            <h3 className="font-semibold mb-2">Add Company</h3>
 
-            {/* FORM FIELDS */}
-            {[
-              "name",
-              "address",
-              "suburb",
-              "state",
-              "postcode",
-              "country",
-              "contactName",
-              "phone",
-              "fax",
-              "email",
-              "comments",
-            ].map((field) => (
+            {["name", "address", "email", "phone", "contactPerson", "notes"].map((f) => (
               <input
-                key={field}
-                placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-                className="border w-full px-2 py-1 mb-2 rounded"
-                value={companyForm[field]}
-                onChange={(e) =>
-                  setCompanyForm({ ...companyForm, [field]: e.target.value })
-                }
+                key={f}
+                placeholder={f.charAt(0).toUpperCase() + f.slice(1)}
+                className="w-full border px-2 py-1 mb-2 rounded"
+                value={companyForm[f] || ""}
+                onChange={(e) => setCompanyForm({ ...companyForm, [f]: e.target.value })}
               />
             ))}
 
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowAdd(false)}
-                className="px-3 py-1 border rounded"
-              >
+            <div className="flex justify-end gap-2 mt-2">
+              <button onClick={() => setShowAdd(false)} className="px-3 py-1 border rounded">
                 Cancel
               </button>
-              <button
-                onClick={handleAdd}
-                className="px-3 py-1 bg-blue-500 text-white rounded"
-              >
+              <button onClick={handleAdd} className="px-3 py-1 bg-blue-600 text-white rounded">
                 Add
               </button>
             </div>

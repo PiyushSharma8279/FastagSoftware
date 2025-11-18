@@ -1,3 +1,26 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+
+.menu-box {
+  @apply absolute mt-2 w-56 bg-white/95 backdrop-blur-lg rounded-xl shadow-lg border border-gray-200 z-50 animate-fadeDown;
+}
+
+.menu-item {
+  @apply p-3 hover:bg-blue-50 cursor-pointer transition-all;
+}
+
+.shortcut {
+  @apply text-xs text-gray-400;
+}
+
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeDown {
+  animation: fadeDown 0.2s ease-out;
+}
