@@ -224,12 +224,12 @@ export default function CompanyManager({
                 <div className="font-semibold">Locations:</div>
                 <div>
 
-                {c.address && (
-                  <div className="text-sm text-gray-600 mb-2 break-words">
-                    • {c.address}
-                  </div>
-                )}
-                
+                  {c.address && (
+                    <div className="text-sm text-gray-600 mb-2 break-words">
+                      • {c.address}
+                    </div>
+                  )}
+
                 </div>
 
                 {/* LOCATIONS */}
@@ -237,14 +237,14 @@ export default function CompanyManager({
                   <div className="text-sm text-gray-700 space-y-1">
 
 
-                    <ul className="space-y-1">
+                    <ul className="space-y-1 ">
                       {c.locations.map((loc, i) => (
                         <li
                           key={i}
                           className="flex justify-between items-center 
                      rounded-md "
                         >
-                          <span className="truncate">• {loc}</span>
+                          <span className="truncate space whitespace-normal">• {loc}</span>
 
                           <button
                             onClick={(e) => {
