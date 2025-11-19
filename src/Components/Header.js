@@ -22,6 +22,14 @@ export default function Header({
     setOpenMenu(openMenu === menu ? null : menu);
   };
 
+  // Helper: Close dropdown + mobile menu + navigate + scroll to content
+  const handleReportSelect = (route) => {
+    onNavigate(route);
+    setOpenMenu(null);        // Close report dropdown
+    setMobileOpen(false);     // Close mobile menu
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   // Close when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -73,28 +81,28 @@ export default function Header({
                 <div className="absolute mt-2 w-56 bg-white border rounded shadow z-50">
                   <div
                     className="p-2 hover:bg-gray-50 cursor-pointer"
-                    onClick={() => onNavigate("report:companies")}
+                    onClick={() => handleReportSelect("report:companies")}
                   >
                     Companies Report
                   </div>
 
                   <div
                     className="p-2 hover:bg-gray-50 cursor-pointer"
-                    onClick={() => onNavigate("report:inspection")}
+                    onClick={() => handleReportSelect("report:inspection")}
                   >
                     Inspection Report
                   </div>
 
                   <div
                     className="p-2 hover:bg-gray-50 cursor-pointer"
-                    onClick={() => onNavigate("report:newitemform")}
+                    onClick={() => handleReportSelect("report:newitemform")}
                   >
                     New Item Form
                   </div>
 
                   <div
                     className="p-2 hover:bg-gray-50 cursor-pointer"
-                    onClick={() => onNavigate("report:failed")}
+                    onClick={() => handleReportSelect("report:failed")}
                   >
                     Failed Equipment
                   </div>
@@ -153,7 +161,7 @@ export default function Header({
       {mobileOpen && (
         <div className="md:hidden mt-3 bg-white border rounded shadow p-3 flex flex-col gap-2 text-sm">
 
-          <button onClick={() => onNavigate("dashboard")} className="p-2 hover:bg-gray-50 rounded">
+          <button onClick={() => handleReportSelect("dashboard")} className="p-2 hover:bg-gray-50 rounded">
             Dashboard
           </button>
 
@@ -170,25 +178,25 @@ export default function Header({
               <div className="mt-1 border rounded">
                 <div
                   className="p-2 hover:bg-gray-50"
-                  onClick={() => onNavigate("report:companies")}
+                  onClick={() => handleReportSelect("report:companies")}
                 >
                   Companies Report
                 </div>
                 <div
                   className="p-2 hover:bg-gray-50"
-                  onClick={() => onNavigate("report:inspection")}
+                  onClick={() => handleReportSelect("report:inspection")}
                 >
                   Inspection Report
                 </div>
                 <div
                   className="p-2 hover:bg-gray-50"
-                  onClick={() => onNavigate("report:newitemform")}
+                  onClick={() => handleReportSelect("report:newitemform")}
                 >
                   New Item Form
                 </div>
                 <div
                   className="p-2 hover:bg-gray-50"
-                  onClick={() => onNavigate("report:failed")}
+                  onClick={() => handleReportSelect("report:failed")}
                 >
                   Failed Equipment
                 </div>

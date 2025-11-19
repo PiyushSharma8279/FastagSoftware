@@ -18,11 +18,14 @@ export default function CompanyManager({
 }) {
   const initialForm = {
     id: null,
-    name: "",
+    companyName: "",
+    country:"",
+    state:"",
+    postcode:"",
     address: "",
     email: "",
     phone: "",
-    contactPerson: "",
+    contactName: "",
     notes: "",
     items: [],
     locations: [], // new
@@ -60,7 +63,7 @@ export default function CompanyManager({
   }, [externalEditCompany, companies, setExternalEditCompany]);
 
   const handleAdd = () => {
-    if (!companyForm.name.trim()) return alert("Company name required");
+    if (!companyForm.companyName.trim()) return alert("Company name required");
     const id = generateCompanyId(companies);
     const newCompany = {
       ...companyForm,
@@ -148,8 +151,8 @@ export default function CompanyManager({
               }`}
             >
               {/* LEFT SIDE (company info) */}
-              <div className="flex-1" onClick={() => setSelectedCompany?.(c.name)}>
-                <div className="font-medium truncate">{c.name}</div>
+              <div className="flex-1" onClick={() => setSelectedCompany?.(c.companyName)}>
+                <div className="font-medium truncate">{c.companyName}</div>
 
                 {c.address && (
                   <div className="text-xs whitespace-normal text-gray-500 truncate">
@@ -197,10 +200,10 @@ export default function CompanyManager({
                   +
                 </button>
 
-                {editing === c.name ? (
+                {editing === c.companyName ? (
                   <>
                     <button
-                      onClick={() => saveEdit(c.name)}
+                      onClick={() => saveEdit(c.companyName)}
                       className="text-xs px-2 py-1 border rounded"
                     >
                       Save
@@ -225,7 +228,7 @@ export default function CompanyManager({
                       Edit
                     </button>
                     <button
-                      onClick={() => onDeleteCompany?.(c.name)}
+                      onClick={() => onDeleteCompany?.(c.companyName)}
                       className="text-xs px-2 py-1 border rounded text-red-600"
                     >
                       Del
@@ -252,7 +255,7 @@ export default function CompanyManager({
 
         <button
           onClick={() => {
-            if (companies.length > 0) setSelectedCompany?.(companies[0].name);
+            if (companies.length > 0) setSelectedCompany?.(companies[0].companyName);
           }}
           className="py-2 px-3 border rounded"
         >
@@ -270,7 +273,7 @@ export default function CompanyManager({
               {editing ? "Edit Company" : "Add Company"}
             </h3>
 
-            {["name", "address", "email", "phone", "contactPerson", "notes"].map((f) => (
+            {["companyName", "address", "email", "phone", "contactName","country","state", "postcode", "notes"].map((f) => (
               <input
                 key={f}
                 placeholder={f.charAt(0).toUpperCase() + f.slice(1)}

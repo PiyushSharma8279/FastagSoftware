@@ -19,11 +19,11 @@ export default function MainDashboard() {
   });
 
   const items = companies.flatMap((c) =>
-    (c.items || []).map((it) => ({ ...it, company: c.name }))
+    (c.items || []).map((it) => ({ ...it, company: c.companyName }))
   );
 
   const [selectedCompany, setSelectedCompany] = useState(
-    companies[0]?.name || ""
+    companies[0]?.companyName || ""
   );
 
   const [selectedItemTag, setSelectedItemTag] = useState(null);
@@ -46,7 +46,7 @@ export default function MainDashboard() {
 
   useEffect(() => {
     if (!selectedCompany && companies.length > 0)
-      setSelectedCompany(companies[0].name);
+      setSelectedCompany(companies[0].companyName);
 
     if (companies.length === 0) setSelectedCompany("");
   }, [companies, selectedCompany]);
@@ -62,32 +62,32 @@ export default function MainDashboard() {
     };
 
     setCompanies((p) => [...p, newCompany]);
-    setSelectedCompany(newCompany.name);
+    setSelectedCompany(newCompany.companyName);
   };
 
   const editCompany = (oldName, updates) => {
     setCompanies((prev) =>
-      prev.map((c) => (c.name === oldName ? { ...c, ...updates } : c))
+      prev.map((c) =>
+        c.companyName === oldName ? { ...c, ...updates } : c
+      )
     );
 
-    if (updates.name && updates.name !== oldName)
-      setSelectedCompany(updates.name);
+    if (updates.companyName && updates.companyName !== oldName)
+      setSelectedCompany(updates.companyName);
   };
 
-  const deleteCompany = (name) => {
-    if (!window.confirm(`Delete company "${name}"?`)) return;
+  const deleteCompany = (companyName) => {
+    if (!window.confirm(`Delete company "${companyName}"?`)) return;
 
-    setCompanies((prev) => prev.filter((c) => c.name !== name));
+    const filtered = companies.filter((c) => c.companyName !== companyName);
+
+    setCompanies(filtered);
     setSelectedItemTag(null);
-
-    setTimeout(() => {
-      const left = companies.filter((c) => c.name !== name);
-      setSelectedCompany(left[0]?.name || "");
-    }, 0);
+    setSelectedCompany(filtered[0]?.companyName || "");
   };
 
   // ----------------------------------------------------
-  // ITEM METHODS (BIG FIX DONE HERE)
+  // ITEM METHODS
   // ----------------------------------------------------
   const addItem = (itemData) => {
     const companyName = itemData.company || selectedCompany;
@@ -99,15 +99,12 @@ export default function MainDashboard() {
 
     setCompanies((prev) =>
       prev.map((c) =>
-        c.name === companyName
+        c.companyName === companyName
           ? {
               ...c,
               items: [
                 ...c.items,
-                {
-                  ...itemData,
-                  id: generateItemId(c.items),
-                },
+                { ...itemData, id: generateItemId(c.items) },
               ],
             }
           : c
@@ -204,12 +201,13 @@ export default function MainDashboard() {
       <div className="max-w-screen-xl mx-auto p-4">
         {view === "dashboard" && (
           <div className="flex flex-col md:flex-row gap-4">
+            {/* Left side: company list */}
             <div className="w-full md:w-80">
               <CompanyManager
                 companies={companies}
                 selectedCompany={selectedCompany}
-                setSelectedCompany={(name) => {
-                  setSelectedCompany(name);
+                setSelectedCompany={(companyName) => {
+                  setSelectedCompany(companyName);
                   setSelectedItemTag(null);
                 }}
                 onAddCompany={addCompany}
@@ -224,6 +222,7 @@ export default function MainDashboard() {
               />
             </div>
 
+            {/* Right side: items */}
             <div className="flex-1">
               <div className="mb-3 flex items-center justify-between">
                 <select
@@ -236,8 +235,8 @@ export default function MainDashboard() {
                 >
                   <option value="">-- Select Company --</option>
                   {companies.map((c) => (
-                    <option key={c.id} value={c.name}>
-                      {c.name}
+                    <option key={c.id} value={c.companyName}>
+                      {c.companyName}
                     </option>
                   ))}
                 </select>
@@ -281,14 +280,23 @@ export default function MainDashboard() {
                   setExternalEditTag={setExternalEditItemTag}
                 />
               </div>
+
+              <div className="flex justify-end items-end">
+                <div>
+                  Companies:{companies.length} &nbsp; Items:{items.length}
+                </div>
+              </div>
             </div>
           </div>
         )}
 
+        {/* REPORT VIEW */}
         {view === "report" && (
           <div className="bg-white rounded shadow">
             <div className="p-3 border-b flex justify-between">
-              <h2 className="font-semibold">Reports / {selectedReport}</h2>
+              <h2 className="font-semibold">
+                Reports / {selectedReport}
+              </h2>
               <button
                 onClick={() => setView("dashboard")}
                 className="px-3 py-1 border rounded"
