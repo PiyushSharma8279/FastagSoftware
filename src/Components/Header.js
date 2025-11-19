@@ -53,7 +53,7 @@ export default function Header({
             onClick={() => onNavigate?.("dashboard")}
             className="font-bold text-xl cursor-pointer"
           >
-            FastTag
+            Power Q
           </div>
 
           {/* Desktop Nav */}

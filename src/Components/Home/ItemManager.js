@@ -216,6 +216,7 @@ export default function ItemManager({
           <table className="w-full min-w-[900px] text-sm">
             <thead>
               <tr className="bg-gray-100 text-left">
+                <th className="p-2 border">Company Name</th>
                 <th className="p-2 border">Item</th>
                 <th className="p-2 border">Description</th>
                 <th className="p-2 border">Location</th>
@@ -238,6 +239,7 @@ export default function ItemManager({
 
               {items.map((it) => (
                 <tr key={it.id || it.tag} onClick={() => onRowClick(it.tag || it.id)} className={`hover:bg-gray-50 cursor-pointer ${selectedItemTag === (it.tag || it.id) ? "bg-blue-50" : ""}`}>
+                  <td className="p-2 border font-semibold">{it.company}</td>
                   <td className="p-2 border font-semibold">{it.id ?? "-"}</td>
                   <td className="p-2 border">{it.description || "-"}</td>
                   <td className="p-2 border">{it.location || "-"}</td>

@@ -1,6 +1,7 @@
 // src/components/CompanyManager/CompanyManager.js
 import React, { useEffect, useState } from "react";
 import { generateCompanyId } from "../../utils";
+import { FiEdit, FiMapPin, FiTrash } from "react-icons/fi";
 
 export default function CompanyManager({
   companies = [],
@@ -19,9 +20,9 @@ export default function CompanyManager({
   const initialForm = {
     id: null,
     companyName: "",
-    country:"",
-    state:"",
-    postcode:"",
+    country: "",
+    state: "",
+    postcode: "",
     address: "",
     email: "",
     phone: "",
@@ -50,9 +51,9 @@ export default function CompanyManager({
 
   useEffect(() => {
     if (externalEditCompany) {
-      const c = companies.find((x) => x.name === externalEditCompany || x.id === externalEditCompany);
+      const c = companies.find((x) => x.companyName === externalEditCompany || x.id === externalEditCompany);
       if (c) {
-        setEditing(c.name);
+        setEditing(c.companyName);
         setCompanyForm({ ...c });
         setShowAdd(true);
       } else {
@@ -77,13 +78,13 @@ export default function CompanyManager({
   };
 
   const startEdit = (c) => {
-    setEditing(c.name);
+    setEditing(c.companyName);
     setCompanyForm({ ...c });
     setShowAdd(true);
   };
 
   const saveEdit = (oldName) => {
-    if (!companyForm.name.trim()) return alert("Company name required");
+    if (!companyForm.companyName.trim()) return alert("Company name required");
     onEditCompany?.(oldName, { ...companyForm });
     setEditing(null);
     setCompanyForm(initialForm);
@@ -101,7 +102,7 @@ export default function CompanyManager({
   const saveLocation = () => {
     if (!newLocation.trim()) return alert("Location required");
 
-    onEditCompany?.(locationCompany.name, {
+    onEditCompany?.(locationCompany.companyName, {
       ...locationCompany,
       locations: [...(locationCompany.locations || []), newLocation.trim()],
     });
@@ -113,7 +114,7 @@ export default function CompanyManager({
   const deleteLocation = (company, index) => {
     const updatedLocations = (company.locations || []).filter((_, i) => i !== index);
 
-    onEditCompany?.(company.name, {
+    onEditCompany?.(company.companyName, {
       ...company,
       locations: updatedLocations,
     });
@@ -136,7 +137,7 @@ export default function CompanyManager({
 
       {/* Companies List */}
       <div className="p-3 overflow-auto flex-1">
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           {companies.length === 0 && (
             <div className="text-gray-500 text-sm">No companies yet</div>
           )}
@@ -144,39 +145,113 @@ export default function CompanyManager({
           {companies.map((c) => (
             <div
               key={c.id}
-              className={`p-2 rounded border flex justify-between items-center cursor-pointer ${
-                c.name === selectedCompany
-                  ? "bg-blue-50 border-blue-200"
-                  : "hover:bg-gray-50"
-              }`}
+              className={`p-4 rounded-xl border shadow-sm transition-all duration-200 flex justify-between items-start cursor-pointer
+          ${c.name === selectedCompany
+                  ? "bg-blue-50 border-blue-300 shadow-md"
+                  : "bg-white hover:bg-gray-50 hover:shadow"
+                }`}
             >
-              {/* LEFT SIDE (company info) */}
-              <div className="flex-1" onClick={() => setSelectedCompany?.(c.companyName)}>
-                <div className="font-medium truncate">{c.companyName}</div>
+              {/* LEFT SIDE */}
+              <div
+                className="flex-1"
+                onClick={() => setSelectedCompany?.(c.companyName)}
+              >
+                <div className="flex justify-between items-center pb-2 border-b mb-2">
+
+                  {/* Company Name */}
+                  <div className="font-semibold text-lg break-words flex-1">
+                    {c.companyName}
+                  </div>
+
+                  {/* Right Side Buttons */}
+                  <div className="flex items-center gap-1">
+
+                    {/* Add Location */}
+                    <button
+                      onClick={() => openLocationModal(c)}
+                      className="p-2 rounded-md bg-purple-100 hover:bg-purple-200 transition text-purple-700"
+                      title="Add Location"
+                    >
+                      <FiMapPin size={10} />
+                    </button>
+
+                    {/* Editing Mode */}
+                    {editing === c.companyName ? (
+                      <>
+                        <button
+                          onClick={() => saveEdit(c.companyName)}
+                          className="px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700 text-xs"
+                        >
+                          Save
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setEditing(null);
+                            setCompanyForm(initialForm);
+                            setShowAdd(false);
+                          }}
+                          className="px-3 py-1 rounded-md bg-gray-200 hover:bg-gray-300 text-xs"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {/* Edit Button */}
+                        <button
+                          onClick={() => startEdit(c)}
+                          className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 transition"
+                          title="Edit Company"
+                        >
+                          <FiEdit size={10} />
+                        </button>
+
+                        {/* Delete Button */}
+                        <button
+                          onClick={() => onDeleteCompany?.(c.companyName)}
+                          className="p-2 rounded-md bg-red-100 text-red-600 hover:bg-red-200 transition"
+                          title="Delete Company"
+                        >
+                          <FiTrash size={10} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                </div>
+
+                <div className="font-semibold">Locations:</div>
+                <div>
 
                 {c.address && (
-                  <div className="text-xs whitespace-normal text-gray-500 truncate">
-                    {c.address}
+                  <div className="text-sm text-gray-600 mb-2 break-words">
+                    • {c.address}
                   </div>
                 )}
+                
+                </div>
 
-                {/* LOCATIONS LIST */}
+                {/* LOCATIONS */}
                 {(c.locations || []).length > 0 && (
-                  <div className="text-xs text-gray-600 mt-1">
-                    <div className="font-semibold mb-1">Locations:</div>
+                  <div className="text-sm text-gray-700 space-y-1">
 
-                    <ul className="ml-2 flex flex-col gap-1">
+
+                    <ul className="space-y-1">
                       {c.locations.map((loc, i) => (
-                        <li key={i} className="flex items-center justify-between bg-gray-100 rounded px-2 py-1">
-                          <span className="truncate whitespace-normal">– {loc}</span>
+                        <li
+                          key={i}
+                          className="flex justify-between items-center 
+                     rounded-md "
+                        >
+                          <span className="truncate">• {loc}</span>
 
-                          {/* DELETE BUTTON */}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               deleteLocation(c, i);
                             }}
-                            className="text-red-600 text-xs font-bold ml-2 hover:text-red-800"
+                            className="text-red-500 text-lg leading-none hover:text-red-700"
                           >
                             ×
                           </button>
@@ -186,60 +261,18 @@ export default function CompanyManager({
                   </div>
                 )}
 
-                <div className="text-xs text-gray-400 mt-1">
+                <div className="text-xs text-gray-400 mt-2">
                   {(c.items || []).length} items
                 </div>
               </div>
 
               {/* RIGHT SIDE BUTTONS */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => openLocationModal(c)}
-                  className="text-xs px-2 py-1 border rounded bg-purple-200"
-                >
-                  +
-                </button>
 
-                {editing === c.companyName ? (
-                  <>
-                    <button
-                      onClick={() => saveEdit(c.companyName)}
-                      className="text-xs px-2 py-1 border rounded"
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditing(null);
-                        setCompanyForm(initialForm);
-                        setShowAdd(false);
-                      }}
-                      className="text-xs px-2 py-1 border rounded"
-                    >
-                      Cancel
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => startEdit(c)}
-                      className="text-xs px-2 py-1 border rounded"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => onDeleteCompany?.(c.companyName)}
-                      className="text-xs px-2 py-1 border rounded text-red-600"
-                    >
-                      Del
-                    </button>
-                  </>
-                )}
-              </div>
             </div>
           ))}
         </div>
       </div>
+
 
       {/* Bottom Buttons */}
       <div className="p-3 border-t flex gap-2">
@@ -273,7 +306,7 @@ export default function CompanyManager({
               {editing ? "Edit Company" : "Add Company"}
             </h3>
 
-            {["companyName", "address", "email", "phone", "contactName","country","state", "postcode", "notes"].map((f) => (
+            {["companyName", "address", "email", "phone", "contactName", "country", "state", "postcode", "notes"].map((f) => (
               <input
                 key={f}
                 placeholder={f.charAt(0).toUpperCase() + f.slice(1)}
